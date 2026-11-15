@@ -80,6 +80,7 @@ li.fl{flex-wrap:wrap}
 .acts{display:flex;gap:6px;width:100%;padding-right:30px}
 .mv{background:var(--card);border:1px solid var(--line);color:var(--teal);border-radius:8px;padding:4px 10px;font:inherit;font-size:12px;cursor:pointer}
 .hint{color:var(--muted);font-size:12px;margin-top:6px}
+.gate>*:not(#regv):not(h1):not(.sub):not(.theme):not(.foot){display:none!important}
 </style>
 </head>
 <body>
@@ -87,6 +88,21 @@ li.fl{flex-wrap:wrap}
   <button class="theme" id="theme">🌓 تغییر تم</button>
   <h1>📅 پلنر</h1>
   <div class="sub" id="today"></div>
+
+  <div class="card" id="regv" style="display:none">
+    <h2>📝 ثبت‌نام در پلنر</h2>
+    <div class="hint">ثبت‌نام برای استفاده از پلنر الزامی است. اطلاعات فقط به‌صورت یک پیام ایتا برای سازنده ارسال می‌شود و برای ثبت‌نام کاربران پلنر استفاده می‌شود.</div>
+    <div class="add">
+      <input type="text" id="rn" placeholder="نام و نام خانوادگی" maxlength="60" autocomplete="name">
+      <input type="text" id="rs" placeholder="شماره دانشجویی" maxlength="20" inputmode="numeric">
+      <input type="text" id="rf" placeholder="رشته / دانشگاه" maxlength="80">
+      <input type="text" id="rmob" placeholder="شماره موبایل (۰۹…)" maxlength="15" inputmode="tel" autocomplete="tel">
+      <input type="text" id="re" placeholder="ایمیل" maxlength="80" inputmode="email" autocomplete="email" dir="ltr">
+    </div>
+    <div class="add"><button class="go" id="rtg">🟢 ارسال با ایتا</button><button class="go" id="rok" style="display:none">✅ پیام را ارسال کردم</button><button class="mv" id="rcp">📋 کپی پیام</button></div>
+    <textarea id="rmsg" dir="auto" readonly placeholder="پیام ثبت‌نام اینجا نشان داده می‌شود"></textarea>
+    <div class="hint">«ارسال با ایتا» پیام را کپی می‌کند و ایتا را باز می‌کند. پیام را در چت بچسبان و بفرست، بعد دکمه‌ی «پیام را ارسال کردم» را بزن تا پلنر باز شود.</div>
+  </div>
 
   <div class="seg"><button id="vw" class="on">هفتگی</button><button id="vm">ماهانه</button><button id="vy">سالانه</button><button id="vp">پروژه</button><button id="vf">آینده</button></div>
 
@@ -478,7 +494,30 @@ $("pv").onclick=()=>shift(1);
 $("theme").onclick=()=>{
   const n=isDark()?"light":"dark";document.documentElement.dataset.theme=n;
   try{localStorage.setItem("planner-theme",n)}catch(e){}};
-_vf();if(!_lk)render();
+function regInit(){
+  const EI="https://eitaa.com/Kamran00hafezi",KEY="planner-reg",box=$("regv"),wrap=document.querySelector(".wrap");
+  const en=s=>String(s).replace(/[۰-۹]/g,d=>"۰۱۲۳۴۵۶۷۸۹".indexOf(d)).replace(/[٠-٩]/g,d=>"٠١٢٣٤٥٦٧٨٩".indexOf(d)).trim();
+  const get=()=>{try{return localStorage.getItem(KEY)}catch(e){return null}};
+  const mark=v=>{try{localStorage.setItem(KEY,v)}catch(e){}};
+  function build(){
+    const n=$("rn").value.trim(),s=en($("rs").value),f=$("rf").value.trim(),m=en($("rmob").value),e=$("re").value.trim();
+    if(n.length<3){toast("نام و نام خانوادگی را کامل بنویس");return null}
+    if(!/^\d{5,15}$/.test(s)){toast("شماره دانشجویی باید فقط عدد باشد");return null}
+    if(f.length<2){toast("رشته / دانشگاه را بنویس");return null}
+    if(!/^09\d{9}$/.test(m)){toast("شماره موبایل را به شکل ۰۹۱۲۳۴۵۶۷۸۹ بنویس");return null}
+    if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)){toast("ایمیل معتبر نیست");return null}
+    const msg="ثبت‌نام پلنر\nنام: "+n+"\nشماره دانشجویی: "+s+"\nرشته/دانشگاه: "+f+"\nموبایل: "+m+"\nایمیل: "+e;
+    $("rmsg").value=msg;return msg}
+  function copyTxt(x,cb){const fb=()=>{x.select();try{document.execCommand("copy");cb()}catch(e){toast("متن را دستی انتخاب و کپی کن")}};
+    try{navigator.clipboard.writeText(x.value).then(cb,fb)}catch(e){fb()}}
+  $("rcp").onclick=()=>{const m=build();if(!m)return;$("rok").style.display="";copyTxt($("rmsg"),()=>toast("پیام کپی شد ✅"))};
+  $("rtg").onclick=()=>{const m=build();if(!m)return;$("rok").style.display="";
+    copyTxt($("rmsg"),()=>{});
+    const w=window.open(EI,"_blank");
+    toast(w?"پیام کپی شد؛ در چت ایتا بچسبان و بفرست ✅":"ایتا باز نشد؛ پیام کپی شد، آیدی Kamran00hafezi را در ایتا باز کن و بچسبان",8000)};
+  $("rok").onclick=()=>{mark("sent");wrap.classList.remove("gate");box.style.display="none";toast("ثبت‌نام ثبت شد ✅")};
+  if(get()!=="sent"){wrap.classList.add("gate");box.style.display=""}}
+_vf();if(!_lk){render();regInit()}
 </script>
 </body>
 </html>
