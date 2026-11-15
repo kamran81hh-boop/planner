@@ -519,10 +519,10 @@ function regInit(){
     try{
       const response=await fetch(REG_API,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(data)});
       let result={};try{result=await response.json()}catch(e){}
-      if(!response.ok||result.ok!==true)throw new Error(result.error||"ارسال به ایتا موفق نبود");
+      if(!response.ok||result.ok!==true)throw new Error("کد پاسخ "+response.status+" — "+(result.error||result.message||result.description||"سرور پیامی نداد"));
       mark("sent");wrap.classList.remove("gate");box.style.display="none";toast("ثبت‌نام با موفقیت انجام شد ✅");
     }catch(err){
-      status.textContent="ارسال انجام نشد. اتصال اینترنت یا تنظیمات سرور را بررسی کنید و دوباره تلاش کنید.";
+      status.textContent=(err instanceof TypeError)?"نتوانستم به سرور وصل شوم (فیلتر شبکه، قطع اینترنت یا محدودیت CORS): "+err.message:"خطای سرور: "+err.message;
       toast("ثبت‌نام ارسال نشد؛ دوباره تلاش کن");
     }finally{btn.disabled=false;btn.textContent="🟢 ثبت‌نام و ارسال خودکار";}
   };
