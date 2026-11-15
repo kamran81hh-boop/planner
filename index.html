@@ -91,7 +91,7 @@ li.fl{flex-wrap:wrap}
 
   <div class="card" id="regv" style="display:none">
     <h2>📝 ثبت‌نام در پلنر</h2>
-    <div class="hint">ثبت‌نام برای استفاده از پلنر الزامی است. اطلاعات فقط به‌صورت یک پیام ایتا برای سازنده ارسال می‌شود و برای ثبت‌نام کاربران پلنر استفاده می‌شود.</div>
+    <div class="hint">ثبت‌نام برای استفاده از پلنر الزامی است. اطلاعات واردشده برای ثبت‌نام، به‌صورت خودکار به کانال خصوصی سازنده در ایتا ارسال می‌شود.</div>
     <div class="add">
       <input type="text" id="rn" placeholder="نام و نام خانوادگی" maxlength="60" autocomplete="name">
       <input type="text" id="rs" placeholder="شماره دانشجویی" maxlength="20" inputmode="numeric">
@@ -99,9 +99,8 @@ li.fl{flex-wrap:wrap}
       <input type="text" id="rmob" placeholder="شماره موبایل (۰۹…)" maxlength="15" inputmode="tel" autocomplete="tel">
       <input type="text" id="re" placeholder="ایمیل" maxlength="80" inputmode="email" autocomplete="email" dir="ltr">
     </div>
-    <div class="add"><button class="go" id="rtg">🟢 ارسال با ایتا</button><button class="go" id="rok" style="display:none">✅ پیام را ارسال کردم</button><button class="mv" id="rcp">📋 کپی پیام</button></div>
-    <textarea id="rmsg" dir="auto" readonly placeholder="پیام ثبت‌نام اینجا نشان داده می‌شود"></textarea>
-    <div class="hint">«ارسال با ایتا» پیام را کپی می‌کند و ایتا را باز می‌کند. پیام را در چت بچسبان و بفرست، بعد دکمه‌ی «پیام را ارسال کردم» را بزن تا پلنر باز شود.</div>
+    <div class="add"><button class="go" id="rtg">🟢 ثبت‌نام و ارسال خودکار</button></div>
+    <div class="hint" id="regstatus" role="status" aria-live="polite">پس از ارسال موفق اطلاعات به ایتا، پلنر باز می‌شود.</div>
   </div>
 
   <div class="seg"><button id="vw" class="on">هفتگی</button><button id="vm">ماهانه</button><button id="vy">سالانه</button><button id="vp">پروژه</button><button id="vf">آینده</button></div>
@@ -495,7 +494,9 @@ $("theme").onclick=()=>{
   const n=isDark()?"light":"dark";document.documentElement.dataset.theme=n;
   try{localStorage.setItem("planner-theme",n)}catch(e){}};
 function regInit(){
-  const EI="https://eitaa.com/Kamran00hafezi",KEY="planner-reg",box=$("regv"),wrap=document.querySelector(".wrap");
+  // آدرس Worker پس از انتشار در Cloudflare اینجا قرار می‌گیرد.
+  const REG_API="https://planner-eitaa.kamran81hh.workers.dev/register";
+  const KEY="planner-reg",box=$("regv"),wrap=document.querySelector(".wrap"),btn=$("rtg"),status=$("regstatus");
   const en=s=>String(s).replace(/[۰-۹]/g,d=>"۰۱۲۳۴۵۶۷۸۹".indexOf(d)).replace(/[٠-٩]/g,d=>"٠١٢٣٤٥٦٧٨٩".indexOf(d)).trim();
   const get=()=>{try{return localStorage.getItem(KEY)}catch(e){return null}};
   const mark=v=>{try{localStorage.setItem(KEY,v)}catch(e){}};
@@ -506,17 +507,27 @@ function regInit(){
     if(f.length<2){toast("رشته / دانشگاه را بنویس");return null}
     if(!/^09\d{9}$/.test(m)){toast("شماره موبایل را به شکل ۰۹۱۲۳۴۵۶۷۸۹ بنویس");return null}
     if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e)){toast("ایمیل معتبر نیست");return null}
-    const msg="ثبت‌نام پلنر\nنام: "+n+"\nشماره دانشجویی: "+s+"\nرشته/دانشگاه: "+f+"\nموبایل: "+m+"\nایمیل: "+e;
-    $("rmsg").value=msg;return msg}
-  function copyTxt(x,cb){const fb=()=>{x.select();try{document.execCommand("copy");cb()}catch(e){toast("متن را دستی انتخاب و کپی کن")}};
-    try{navigator.clipboard.writeText(x.value).then(cb,fb)}catch(e){fb()}}
-  $("rcp").onclick=()=>{const m=build();if(!m)return;$("rok").style.display="";copyTxt($("rmsg"),()=>toast("پیام کپی شد ✅"))};
-  $("rtg").onclick=()=>{const m=build();if(!m)return;$("rok").style.display="";
-    copyTxt($("rmsg"),()=>{});
-    const w=window.open(EI,"_blank");
-    toast(w?"پیام کپی شد؛ در چت ایتا بچسبان و بفرست ✅":"ایتا باز نشد؛ پیام کپی شد، آیدی Kamran00hafezi را در ایتا باز کن و بچسبان",8000)};
-  $("rok").onclick=()=>{mark("sent");wrap.classList.remove("gate");box.style.display="none";toast("ثبت‌نام ثبت شد ✅")};
-  if(get()!=="sent"){wrap.classList.add("gate");box.style.display=""}}
+    return {name:n,student_id:s,field:f,mobile:m,email:e};
+  }
+  btn.onclick=async()=>{
+    const data=build();if(!data)return;
+    if(REG_API.includes("YOUR-WORKER-NAME")){
+      status.textContent="اتصال سرور هنوز تنظیم نشده است. ابتدا Worker را منتشر و آدرس آن را در فایل قرار دهید.";
+      toast("اتصال ایتا هنوز کامل پیکربندی نشده است");return;
+    }
+    btn.disabled=true;btn.textContent="⏳ در حال ارسال…";status.textContent="در حال ارسال امن اطلاعات به کانال ایتا…";
+    try{
+      const response=await fetch(REG_API,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(data)});
+      let result={};try{result=await response.json()}catch(e){}
+      if(!response.ok||result.ok!==true)throw new Error(result.error||"ارسال به ایتا موفق نبود");
+      mark("sent");wrap.classList.remove("gate");box.style.display="none";toast("ثبت‌نام با موفقیت انجام شد ✅");
+    }catch(err){
+      status.textContent="ارسال انجام نشد. اتصال اینترنت یا تنظیمات سرور را بررسی کنید و دوباره تلاش کنید.";
+      toast("ثبت‌نام ارسال نشد؛ دوباره تلاش کن");
+    }finally{btn.disabled=false;btn.textContent="🟢 ثبت‌نام و ارسال خودکار";}
+  };
+  if(get()!=="sent"){wrap.classList.add("gate");box.style.display=""}
+}
 _vf();if(!_lk){render();regInit()}
 </script>
 </body>
